@@ -8,6 +8,7 @@ export interface PlayerEntry {
   characterName: string;
   characterClass: string;
   characterLevel: string;
+  beingUsed: boolean;
 }
 
 export enum CharacterLevel {
@@ -15,6 +16,17 @@ export enum CharacterLevel {
   SUPPORT_CARRY = 'Suporte ( 1445+ )',
   MID_LEVEL = 'Intermediário ( 1400 ~ 1445 | 3+ Engravings )',
   ALT = 'Carregado ( 1370 ~1399 )',
+}
+
+export class RaidGroup {
+  dps1: any;
+  dps2: any;
+  alt1: any;
+  alt2: any;
+  alt3: any;
+  alt4: any;
+  alt5: any;
+  alt6: any;
 }
 
 @Injectable()
@@ -41,6 +53,7 @@ export class AppService {
         characterName: entry['Nome do personagem'],
         characterClass: entry['Classe'],
         characterLevel: entry['ilvl'],
+        beingUsed: false,
       };
     });
 
@@ -48,7 +61,6 @@ export class AppService {
       playersEntries,
       CharacterLevel.DPS_CARRY,
     );
-
     const altCharacters = this.getCharactersFromType(
       playersEntries,
       CharacterLevel.ALT,
@@ -62,16 +74,97 @@ export class AppService {
       CharacterLevel.SUPPORT_CARRY,
     );
 
+    //Número total de raids, arredondando pra cima para não ficar ninguém de fora. Último grupo pode precisar de mais dps/alts.
+    const totalRaids = Math.ceil(carryCharacters.length / 2);
+
+    const raidGroups: RaidGroup[] = [];
+
+    for (let i = 0; i < totalRaids; i++) {
+      const group = new RaidGroup();
+      let remainingAlts = 6;
+
+      group.dps1 = this.getAvailableCharacterFromType(
+        playersEntries,
+        CharacterLevel.DPS_CARRY,
+        group,
+      );
+      group.dps2 = this.getAvailableCharacterFromType(
+        playersEntries,
+        CharacterLevel.DPS_CARRY,
+        group,
+      );
+
+      //Se acabarem os main DPS, busca dois intermediários
+      if (!group.dps2) {
+        group.dps2 = this.getAvailableCharacterFromType(
+          playersEntries,
+          CharacterLevel.MID_LEVEL,
+          group,
+        );
+
+        group.alt6 = this.getAvailableCharacterFromType(
+          playersEntries,
+          CharacterLevel.MID_LEVEL,
+          group,
+        );
+
+        remainingAlts--;
+      }
+
+      //Atribui 6 alts programaticamente
+      for (let i = 1; i <= remainingAlts; i++) {
+        const result = this.getAvailableCharacterFromType(
+          playersEntries,
+          CharacterLevel.ALT,
+          group,
+        );
+
+        const altId = 'alt' + i;
+        group[altId] = result;
+      }
+
+      raidGroups.push(group);
+    }
+
     return {
-      playersEntries,
-      carryCharacters,
-      altCharacters,
-      midLevelCharacters,
-      mainSupports,
+      raidGroups,
     };
   }
 
+  /**
+   * Retorna todos personagens do tipo informado.
+   */
   getCharactersFromType(entries: PlayerEntry[], type: string) {
     return entries.filter((entry) => entry.characterLevel === type);
+  }
+
+  /**
+   * Retorna um personagem que não está sendo usado em algum grupo, e o marca como sendo usado.
+   */
+  getAvailableCharacterFromType(
+    entries: PlayerEntry[],
+    type: string,
+    group: RaidGroup,
+  ) {
+    const playersInGroup = Object.values(group).map(
+      (entry) => entry?.playerName,
+    );
+
+    const character = entries.find(
+      (entry) =>
+        entry.characterLevel === type &&
+        !entry.beingUsed &&
+        !playersInGroup.find((p) => p === entry.playerName),
+    );
+
+    if (character) {
+      const index = entries.findIndex(
+        (entry) => entry.characterName === character.characterName,
+      );
+
+      entries[index].beingUsed = true;
+    }
+
+    return character;
   }
 }
