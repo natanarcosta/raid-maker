@@ -81,6 +81,7 @@ export class AppService {
 
     for (let i = 0; i < totalRaids; i++) {
       const group = new RaidGroup();
+
       let remainingAlts = 6;
 
       group.dps1 = this.getAvailableCharacterFromType(
@@ -111,13 +112,22 @@ export class AppService {
         remainingAlts--;
       }
 
-      //Atribui 6 alts programaticamente
+      //Atribui alts programaticamente
       for (let i = 1; i <= remainingAlts; i++) {
-        const result = this.getAvailableCharacterFromType(
+        let result = this.getAvailableCharacterFromType(
           playersEntries,
           CharacterLevel.ALT,
           group,
         );
+
+        //Se não tem mais alts disponíveis busca um intermediário
+        if (!result) {
+          result = this.getAvailableCharacterFromType(
+            playersEntries,
+            CharacterLevel.MID_LEVEL,
+            group,
+          );
+        }
 
         const altId = 'alt' + i;
         group[altId] = result;
@@ -146,10 +156,12 @@ export class AppService {
     type: string,
     group: RaidGroup,
   ) {
+    //Nome dos jogadores já presentes no grupo
     const playersInGroup = Object.values(group).map(
       (entry) => entry?.playerName,
     );
 
+    //Busca um personagem do tipo informado, que não está sendo usado e de algum jogador que ainda não está no grupo
     const character = entries.find(
       (entry) =>
         entry.characterLevel === type &&
@@ -157,6 +169,7 @@ export class AppService {
         !playersInGroup.find((p) => p === entry.playerName),
     );
 
+    //Se encontrar um personagem viável, marca-o como beingUsed.
     if (character) {
       const index = entries.findIndex(
         (entry) => entry.characterName === character.characterName,
