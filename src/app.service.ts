@@ -3,6 +3,12 @@ import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 
+/**
+ * TO-DO:
+ * Lidar com main suportes
+ * Tipagem do RaidGroup
+ */
+
 export interface PlayerEntry {
   timestamp: Date;
   playerName: string;
