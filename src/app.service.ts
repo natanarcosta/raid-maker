@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -136,9 +137,17 @@ export class AppService {
       raidGroups.push(group);
     }
 
-    return {
-      raidGroups,
-    };
+    return raidGroups.map((group) => {
+      // return Object.values(group).map((value) => value?.playerName);
+      return Object.values(group).map((value) => {
+        if (value?.characterLevel === CharacterLevel.DPS_CARRY)
+          return 'DPS: ' + value.playerName;
+        if (value?.characterLevel === CharacterLevel.ALT)
+          return 'ALT: ' + value.playerName;
+        if (value?.characterLevel === CharacterLevel.MID_LEVEL)
+          return 'INT: ' + value.playerName;
+      });
+    });
   }
 
   /**
