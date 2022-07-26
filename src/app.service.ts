@@ -114,7 +114,7 @@ export class AppService {
       }
 
       //Atribui alts programaticamente
-      for (let i = 1; i <= remainingAlts; i++) {
+      for (let j = 1; j <= remainingAlts; j++) {
         let result = this.getAvailableCharacterFromType(
           playersEntries,
           CharacterLevel.ALT,
@@ -130,7 +130,7 @@ export class AppService {
           );
         }
 
-        const altId = 'alt' + i;
+        const altId = 'alt' + j;
         group[altId] = result;
       }
 
