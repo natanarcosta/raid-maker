@@ -14,9 +14,9 @@ export interface PlayerEntry {
 
 export enum CharacterLevel {
   DPS_CARRY = 'DPS Carry ( 1445+ )',
-  SUPPORT_CARRY = 'Suporte ( 1445+ )',
+  SUPPORT_CARRY = 'Main Suporte ( 1445+ )',
   MID_LEVEL = 'Intermediário ( 1400 ~ 1445 | 3+ Engravings )',
-  ALT = 'Carregado ( 1370 ~1399 )',
+  ALT = 'Alt ( 1370 ~1399 )',
 }
 
 export class RaidGroup {
@@ -50,7 +50,7 @@ export class AppService {
     const playersEntries: PlayerEntry[] = data.map((entry) => {
       return {
         timestamp: entry['Carimbo de data/hora'],
-        playerName: entry['Nome no discord'],
+        playerName: entry['Apelido no discord da guild'],
         characterName: entry['Nome do personagem'],
         characterClass: entry['Classe'],
         characterLevel: entry['ilvl'],
