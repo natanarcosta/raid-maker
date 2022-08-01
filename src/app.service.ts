@@ -143,6 +143,7 @@ export class AppService {
         CharacterLevel.DPS_CARRY,
         group,
         playersEntries,
+        raidGroups[i - 1],
       );
 
       group.dps2 = await this.getAvailableCharacterFromType(
@@ -150,6 +151,7 @@ export class AppService {
         CharacterLevel.DPS_CARRY,
         group,
         playersEntries,
+        raidGroups[i - 1],
       );
 
       //Se acabarem os main DPS, busca um intermediário + 1 main sup
@@ -159,6 +161,7 @@ export class AppService {
           CharacterLevel.MID_LEVEL,
           group,
           playersEntries,
+          raidGroups[i - 1],
         );
 
         group.alt6 = await this.getAvailableCharacterFromType(
@@ -166,6 +169,7 @@ export class AppService {
           CharacterLevel.SUPPORT_CARRY,
           group,
           playersEntries,
+          raidGroups[i - 1],
         );
 
         if (!group.alt6) {
@@ -174,6 +178,7 @@ export class AppService {
             CharacterLevel.MID_LEVEL,
             group,
             playersEntries,
+            raidGroups[i - 1],
           );
         }
 
@@ -187,6 +192,7 @@ export class AppService {
           CharacterLevel.ALT,
           group,
           playersEntries,
+          raidGroups[i - 1],
         );
 
         //Se não tem mais alts disponíveis busca um intermediário
@@ -196,6 +202,7 @@ export class AppService {
             CharacterLevel.MID_LEVEL,
             group,
             playersEntries,
+            raidGroups[i - 1],
           );
 
           if (!result) {
@@ -204,6 +211,7 @@ export class AppService {
               CharacterLevel.SUPPORT_CARRY,
               group,
               playersEntries,
+              raidGroups[i - 1],
             );
           }
         }
@@ -253,11 +261,49 @@ export class AppService {
     type: string,
     group: RaidGroup,
     players: PlayerEntry[],
+    previousGroup: RaidGroup,
   ) {
     //Nome dos jogadores já presentes no grupo
     const playersInGroup = Object.values(group).map(
       (entry) => entry?.playerName,
     );
+
+    if (previousGroup) {
+      const playersInPreviousGroup = Object.values(previousGroup).map(
+        (entry) => entry?.playerName,
+      );
+
+      let character = entries.find(
+        (entry) =>
+          //Do tipo informado
+          entry.characterLevel === type &&
+          //Que não está sendo usado
+          !entry.beingUsed &&
+          //De player não participante do grupo
+          !playersInGroup.find((p) => p === entry.playerName) &&
+          !playersInPreviousGroup.find((p) => p === entry.playerName) &&
+          //De player que trouxe ao menos 1 carry
+          players.find((p) => p.playerName === entry.playerName).score > 0 &&
+          //De player que não estourou a cota de alts
+          players.find((p) => p.playerName === entry.playerName)
+            .mustCarryAlts >=
+            this.countAltsBeingUsedByPlayer(
+              players.find((p) => p.playerName === entry.playerName).playerName,
+              entries,
+            ),
+      );
+
+      //Se encontrar um personagem viável, marca-o como beingUsed.
+      if (character) {
+        const index = entries.findIndex(
+          (entry) => entry.characterName === character.characterName,
+        );
+
+        entries[index].beingUsed = true;
+
+        return character;
+      }
+    }
 
     //Sort na array de personagens para priorizar pessoas que tem menos alts incluidos
     entries.sort((a, b) => {
@@ -302,6 +348,13 @@ export class AppService {
           //De player não participante do grupo
           !playersInGroup.find((p) => p === entry.playerName),
       );
+      if (character) {
+        const index = entries.findIndex(
+          (entry) => entry.characterName === character.characterName,
+        );
+
+        entries[index].beingUsed = true;
+      }
 
       if (character) {
         const index = entries.findIndex(
