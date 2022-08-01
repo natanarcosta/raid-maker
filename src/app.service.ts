@@ -266,29 +266,6 @@ export class AppService {
       return aCount > bCount ? 1 : -1;
     });
 
-    //If do mestre poke pqp
-    if (type === CharacterLevel.DPS_CARRY) {
-      let character = entries.find(
-        (entry) =>
-          //Do tipo informado
-          entry.characterLevel === type &&
-          //Que não está sendo usado
-          !entry.beingUsed &&
-          //De player não participante do grupo
-          !playersInGroup.find((p) => p === entry.playerName) &&
-          entry.playerName === 'Pokmestre',
-      );
-
-      if (character) {
-        const index = entries.findIndex(
-          (entry) => entry.characterName === character.characterName,
-        );
-
-        entries[index].beingUsed = true;
-        return character;
-      }
-    }
-
     //Busca um personagem do tipo informado, que não está sendo usado e de algum jogador que ainda não está no grupo.
     let character = entries.find(
       (entry) =>
@@ -300,7 +277,7 @@ export class AppService {
         !playersInGroup.find((p) => p === entry.playerName) &&
         //De player que trouxe ao menos 1 carry
         players.find((p) => p.playerName === entry.playerName).score > 0 &&
-        //De player que não estouro a cota de alts
+        //De player que não estourou a cota de alts
         players.find((p) => p.playerName === entry.playerName).mustCarryAlts >=
           this.countAltsBeingUsedByPlayer(
             players.find((p) => p.playerName === entry.playerName).playerName,
