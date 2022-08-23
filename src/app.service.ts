@@ -15,7 +15,7 @@ export interface CharacterEntry {
   characterName: string;
   characterClass: string;
   characterLevel: string;
-  beingUsed: boolean;
+  inUse: boolean;
 }
 
 export interface PlayerEntry {
@@ -70,7 +70,7 @@ export class AppService {
         characterName: entry['Nome do personagem'],
         characterClass: entry['Classe'],
         characterLevel: entry['ilvl'],
-        beingUsed: false,
+        inUse: false,
       };
     });
 
@@ -229,12 +229,10 @@ export class AppService {
       });
     });
 
-    this.formatOutput(output);
-
     return {
       output,
       playersEntries,
-      unused: characterEntries.filter((c) => !c.beingUsed),
+      unused: characterEntries.filter((c) => !c.inUse),
     };
   }
 
@@ -272,7 +270,7 @@ export class AppService {
         //Do tipo informado
         entry.characterLevel === type &&
         //Que não está sendo usado
-        !entry.beingUsed &&
+        !entry.inUse &&
         //De player não participante do grupo
         !playersInGroup.find((p) => p === entry.playerName) &&
         //De player que trouxe ao menos 1 carry
@@ -285,20 +283,20 @@ export class AppService {
           ),
     );
 
-    //Se encontrar um personagem viável, marca-o como beingUsed.
+    //Se encontrar um personagem viável, marca como inUse.
     if (character) {
       const index = entries.findIndex(
         (entry) => entry.characterName === character.characterName,
       );
 
-      entries[index].beingUsed = true;
+      entries[index].inUse = true;
     } else {
       character = entries.find(
         (entry) =>
           //Do tipo informado
           entry.characterLevel === type &&
           //Que não está sendo usado
-          !entry.beingUsed &&
+          !entry.inUse &&
           //De player não participante do grupo
           !playersInGroup.find((p) => p === entry.playerName),
       );
@@ -308,7 +306,7 @@ export class AppService {
           (entry) => entry.characterName === character.characterName,
         );
 
-        entries[index].beingUsed = true;
+        entries[index].inUse = true;
       }
     }
 
@@ -323,23 +321,9 @@ export class AppService {
       (char) =>
         char.playerName === playerName &&
         char.characterLevel === CharacterLevel.ALT &&
-        char.beingUsed,
+        char.inUse,
     ).length;
 
     return count;
-  }
-
-  formatOutput(output: string[][]) {
-    for (const group of output) {
-      const lines = Object.values(group).map((val) => {
-        const nameLength = val?.split(':')[1].length;
-
-        return (
-          `| ${val?.split(':')[0] || '---'} | ${
-            val?.split(':')[1] || '---------------'
-          }` + `${' '.repeat(15 - nameLength) + '|'}`
-        );
-      });
-    }
   }
 }
