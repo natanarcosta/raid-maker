@@ -1,13 +1,7 @@
 /* eslint-disable prettier/prettier */
-import { ConsoleLogger, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-
-/**
- * TO-DO:
- * Lidar com main suportes
- * Tipagem do RaidGroup
- */
 
 export interface CharacterEntry {
   timestamp: Date;
@@ -36,22 +30,18 @@ export enum CharacterLevel {
 }
 
 export class RaidGroup {
-  dps1: any;
-  dps2: any;
-  alt1: any;
-  alt2: any;
-  alt3: any;
-  alt4: any;
-  alt5: any;
-  alt6: any;
+  dps1: CharacterEntry;
+  dps2: CharacterEntry;
+  alt1: CharacterEntry;
+  alt2: CharacterEntry;
+  alt3: CharacterEntry;
+  alt4: CharacterEntry;
+  alt5: CharacterEntry;
+  alt6: CharacterEntry;
 }
 
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Hello World!';
-  }
-
   getDataFromJson() {
     const fullPath = path.join(__dirname, '../src/data/csvjson.json');
 
