@@ -12,8 +12,6 @@ export interface CharacterEntry {
   inUse: boolean;
 }
 
-//teste
-
 export interface PlayerEntry {
   playerName: string;
   dpsCharacters: CharacterEntry[];
