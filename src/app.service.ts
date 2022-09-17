@@ -1,12 +1,11 @@
 /* eslint-disable prettier/prettier */
-import { ConsoleLogger, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 
 /**
  * TO-DO:
- * Lidar com main suportes
- * Tipagem do RaidGroup
+ * Integração com google sheets
  */
 
 export interface CharacterEntry {
@@ -36,14 +35,14 @@ export enum CharacterLevel {
 }
 
 export class RaidGroup {
-  dps1: any;
-  dps2: any;
-  alt1: any;
-  alt2: any;
-  alt3: any;
-  alt4: any;
-  alt5: any;
-  alt6: any;
+  dps1: CharacterEntry;
+  dps2: CharacterEntry;
+  alt1: CharacterEntry;
+  alt2: CharacterEntry;
+  alt3: CharacterEntry;
+  alt4: CharacterEntry;
+  alt5: CharacterEntry;
+  alt6: CharacterEntry;
 }
 
 @Injectable()
@@ -131,6 +130,10 @@ export class AppService {
     //Número total de raids, arredondando pra cima para não ficar ninguém de fora. Último grupo pode precisar de mais dps/alts.
     const totalRaids = Math.ceil(carryCharacters.length / 2);
 
+    console.log(carryCharacters.length);
+
+    console.log(totalRaids);
+
     const raidGroups: RaidGroup[] = [];
 
     for (let i = 0; i < totalRaids; i++) {
@@ -138,42 +141,48 @@ export class AppService {
 
       let remainingAlts = 6;
 
-      group.dps1 = await this.getAvailableCharacterFromType(
+      group.dps1 = await this.getAvailableCharacter(
         characterEntries,
-        CharacterLevel.DPS_CARRY,
         group,
         playersEntries,
+        CharacterLevel.DPS_CARRY,
+        true,
       );
 
-      group.dps2 = await this.getAvailableCharacterFromType(
+      group.dps2 = await this.getAvailableCharacter(
         characterEntries,
-        CharacterLevel.DPS_CARRY,
         group,
         playersEntries,
+        CharacterLevel.DPS_CARRY,
+        true,
       );
 
       //Se acabarem os main DPS, busca um intermediário + 1 main sup
       if (!group.dps2) {
-        group.dps2 = await this.getAvailableCharacterFromType(
+        group.dps2 = await this.getAvailableCharacter(
           characterEntries,
-          CharacterLevel.MID_LEVEL,
           group,
           playersEntries,
+          CharacterLevel.MID_LEVEL,
+          true,
         );
 
-        group.alt6 = await this.getAvailableCharacterFromType(
+        group.alt6 = await this.getAvailableCharacter(
           characterEntries,
-          CharacterLevel.SUPPORT_CARRY,
           group,
           playersEntries,
+          CharacterLevel.MID_LEVEL,
+          true,
         );
 
         if (!group.alt6) {
-          group.alt6 = await this.getAvailableCharacterFromType(
+          group.alt6 = await this.getAvailableCharacter(
             characterEntries,
-            CharacterLevel.MID_LEVEL,
             group,
             playersEntries,
+            CharacterLevel.SUPPORT_CARRY,
+            false,
+            true,
           );
         }
 
@@ -182,28 +191,31 @@ export class AppService {
 
       // Atribui alts programaticamente
       for (let j = 1; j <= remainingAlts; j++) {
-        let result = await this.getAvailableCharacterFromType(
+        let result = await this.getAvailableCharacter(
           characterEntries,
-          CharacterLevel.ALT,
           group,
           playersEntries,
+          CharacterLevel.ALT,
+          false,
+          //Tenta garantir que ao menos 1 alt seja suporte
+          j === 1,
         );
 
         //Se não tem mais alts disponíveis busca um intermediário
         if (!result) {
-          result = await this.getAvailableCharacterFromType(
+          result = await this.getAvailableCharacter(
             characterEntries,
-            CharacterLevel.MID_LEVEL,
             group,
             playersEntries,
+            CharacterLevel.MID_LEVEL,
           );
 
           if (!result) {
-            result = await this.getAvailableCharacterFromType(
+            result = await this.getAvailableCharacter(
               characterEntries,
-              CharacterLevel.SUPPORT_CARRY,
               group,
               playersEntries,
+              CharacterLevel.SUPPORT_CARRY,
             );
           }
         }
@@ -219,17 +231,15 @@ export class AppService {
       // return Object.values(group).map((value) => value?.playerName);
       return Object.values(group).map((value) => {
         if (value?.characterLevel === CharacterLevel.DPS_CARRY)
-          return 'DPS: ' + value.playerName;
+          return `DPS: ${value.playerName} (${value.characterClass})`;
         if (value?.characterLevel === CharacterLevel.ALT)
-          return 'ALT: ' + value.playerName;
+          return `ALT: ${value.playerName} (${value.characterClass})`;
         if (value?.characterLevel === CharacterLevel.MID_LEVEL)
-          return 'INT: ' + value.playerName;
+          return `INT: ${value.playerName} (${value.characterClass})`;
         if (value?.characterLevel === CharacterLevel.SUPPORT_CARRY)
-          return 'SUP: ' + value.playerName;
+          return `SUP: ${value.playerName} (${value.characterClass})`;
       });
     });
-
-    this.formatOutput(output);
 
     return {
       output,
@@ -265,29 +275,6 @@ export class AppService {
       const bCount = this.countAltsBeingUsedByPlayer(b.playerName, entries);
       return aCount > bCount ? 1 : -1;
     });
-
-    //If do mestre poke pqp
-    if (type === CharacterLevel.DPS_CARRY) {
-      let character = entries.find(
-        (entry) =>
-          //Do tipo informado
-          entry.characterLevel === type &&
-          //Que não está sendo usado
-          !entry.beingUsed &&
-          //De player não participante do grupo
-          !playersInGroup.find((p) => p === entry.playerName) &&
-          entry.playerName === 'Pokmestre',
-      );
-
-      if (character) {
-        const index = entries.findIndex(
-          (entry) => entry.characterName === character.characterName,
-        );
-
-        entries[index].beingUsed = true;
-        return character;
-      }
-    }
 
     //Busca um personagem do tipo informado, que não está sendo usado e de algum jogador que ainda não está no grupo.
     let character = entries.find(
@@ -338,6 +325,87 @@ export class AppService {
     return character;
   }
 
+  async getAvailableCharacter(
+    entries: CharacterEntry[],
+    group: RaidGroup,
+    players: PlayerEntry[],
+    ilvl?: string,
+    isDps?: boolean,
+    isSupport?: boolean,
+  ) {
+    //Nome dos jogadores já presentes no grupo
+    const playersInGroup = Object.values(group).map(
+      (entry) => entry?.playerName,
+    );
+
+    //Sort na array de personagens para priorizar pessoas que tem menos alts incluidos
+    entries.sort((a, b) => {
+      const aCount = this.countAltsBeingUsedByPlayer(a.playerName, entries);
+      const bCount = this.countAltsBeingUsedByPlayer(b.playerName, entries);
+      return aCount > bCount ? 1 : -1;
+    });
+
+    //Primeiro filtro
+
+    const filteredEntries = entries.filter((entry) => {
+      if (
+        //Personagens não usados
+        !entry.beingUsed &&
+        //Não deixa 2 personagens da mesma pessoa entrarem no mesmo grupo
+        !playersInGroup.find((p) => p === entry.playerName)
+      )
+        return entry;
+    });
+
+    let optmizedEntries = filteredEntries.filter((entry) => {
+      if (
+        players.find((p) => p.playerName === entry.playerName).score > 0 &&
+        //De player que não estouro a cota de alts
+        players.find((p) => p.playerName === entry.playerName).mustCarryAlts >=
+          this.countAltsBeingUsedByPlayer(
+            players.find((p) => p.playerName === entry.playerName).playerName,
+            entries,
+          )
+      )
+        return entry;
+    });
+
+    if (!optmizedEntries.length) optmizedEntries = filteredEntries;
+
+    if (ilvl) {
+      optmizedEntries = optmizedEntries.filter(
+        (entry) => entry.characterLevel === ilvl,
+      );
+    }
+
+    const supports = ['Bard', 'Paladin'];
+
+    if (isDps) {
+      optmizedEntries = optmizedEntries.filter(
+        (entry) => !supports.includes(entry.characterClass),
+      );
+    }
+
+    if (isSupport) {
+      const supportsAttempt = optmizedEntries.filter((entry) =>
+        supports.includes(entry.characterClass),
+      );
+      if (supportsAttempt.length) optmizedEntries = supportsAttempt;
+    }
+
+    const character = optmizedEntries[0];
+
+    if (character) {
+      const index = entries.findIndex(
+        (entry) => entry.characterName === character.characterName,
+      );
+
+      entries[index].beingUsed = true;
+    }
+
+    return optmizedEntries[0];
+  }
+
   countAltsBeingUsedByPlayer(
     playerName: string,
     entries: CharacterEntry[],
@@ -350,19 +418,5 @@ export class AppService {
     ).length;
 
     return count;
-  }
-
-  formatOutput(output: string[][]) {
-    for (const group of output) {
-      const lines = Object.values(group).map((val) => {
-        const nameLength = val?.split(':')[1].length;
-
-        return (
-          `| ${val?.split(':')[0] || '---'} | ${
-            val?.split(':')[1] || '---------------'
-          }` + `${' '.repeat(15 - nameLength) + '|'}`
-        );
-      });
-    }
   }
 }
