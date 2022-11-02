@@ -10,7 +10,7 @@ export interface CharacterEntry {
   characterName: string;
   characterClass: string;
   characterLevel: string;
-  beingUsed: boolean;
+  inUse: boolean;
 }
 
 export interface PlayerEntry {
@@ -226,7 +226,7 @@ export class AppService {
     return {
       output,
       playersEntries,
-      unused: characterEntries.filter((c) => !c.beingUsed),
+      unused: characterEntries.filter((c) => !c.inUse),
     };
   }
 
@@ -264,12 +264,12 @@ export class AppService {
         //Do tipo informado
         entry.characterLevel === type &&
         //Que não está sendo usado
-        !entry.beingUsed &&
+        !entry.inUse &&
         //De player não participante do grupo
         !playersInGroup.find((p) => p === entry.playerName) &&
         //De player que trouxe ao menos 1 carry
         players.find((p) => p.playerName === entry.playerName).score > 0 &&
-        //De player que não estouro a cota de alts
+        //De player que não estourou a cota de alts
         players.find((p) => p.playerName === entry.playerName).mustCarryAlts >=
           this.countAltsBeingUsedByPlayer(
             players.find((p) => p.playerName === entry.playerName).playerName,
@@ -277,20 +277,20 @@ export class AppService {
           ),
     );
 
-    //Se encontrar um personagem viável, marca-o como beingUsed.
+    //Se encontrar um personagem viável, marca como inUse.
     if (character) {
       const index = entries.findIndex(
         (entry) => entry.characterName === character.characterName,
       );
 
-      entries[index].beingUsed = true;
+      entries[index].inUse = true;
     } else {
       character = entries.find(
         (entry) =>
           //Do tipo informado
           entry.characterLevel === type &&
           //Que não está sendo usado
-          !entry.beingUsed &&
+          !entry.inUse &&
           //De player não participante do grupo
           !playersInGroup.find((p) => p === entry.playerName),
       );
@@ -300,7 +300,7 @@ export class AppService {
           (entry) => entry.characterName === character.characterName,
         );
 
-        entries[index].beingUsed = true;
+        entries[index].inUse = true;
       }
     }
 
@@ -396,7 +396,7 @@ export class AppService {
       (char) =>
         char.playerName === playerName &&
         char.characterLevel === CharacterLevel.ALT &&
-        char.beingUsed,
+        char.inUse,
     ).length;
 
     return count;
