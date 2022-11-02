@@ -2,11 +2,7 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-
-/**
- * TO-DO:
- * Integração com google sheets
- */
+import { GoogleSheetsService } from './google-sheets/google-sheets.service';
 
 export interface CharacterEntry {
   timestamp: Date;
@@ -47,6 +43,7 @@ export class RaidGroup {
 
 @Injectable()
 export class AppService {
+  constructor(private readonly sheetsService: GoogleSheetsService) {}
   getHello(): string {
     return 'Hello World!';
   }
@@ -60,18 +57,7 @@ export class AppService {
   }
 
   async createRaid() {
-    const data = this.getDataFromJson();
-
-    const characterEntries: CharacterEntry[] = data.map((entry) => {
-      return {
-        timestamp: entry['Carimbo de data/hora'],
-        playerName: entry['Apelido no discord da guild'],
-        characterName: entry['Nome do personagem'],
-        characterClass: entry['Classe'],
-        characterLevel: entry['ilvl'],
-        beingUsed: false,
-      };
-    });
+    const characterEntries = await this.sheetsService.getData();
 
     const carryCharacters = this.getCharactersFromType(
       characterEntries,
@@ -129,10 +115,6 @@ export class AppService {
 
     //Número total de raids, arredondando pra cima para não ficar ninguém de fora. Último grupo pode precisar de mais dps/alts.
     const totalRaids = Math.ceil(carryCharacters.length / 2);
-
-    console.log(carryCharacters.length);
-
-    console.log(totalRaids);
 
     const raidGroups: RaidGroup[] = [];
 
