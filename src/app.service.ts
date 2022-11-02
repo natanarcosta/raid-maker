@@ -10,7 +10,7 @@ export interface CharacterEntry {
   characterName: string;
   characterClass: string;
   characterLevel: string;
-  inUse: boolean;
+  beingUsed: boolean;
 }
 
 export interface PlayerEntry {
@@ -226,7 +226,7 @@ export class AppService {
     return {
       output,
       playersEntries,
-      unused: characterEntries.filter((c) => !c.inUse),
+      unused: characterEntries.filter((c) => !c.beingUsed),
     };
   }
 
@@ -264,7 +264,7 @@ export class AppService {
         //Do tipo informado
         entry.characterLevel === type &&
         //Que não está sendo usado
-        !entry.inUse &&
+        !entry.beingUsed &&
         //De player não participante do grupo
         !playersInGroup.find((p) => p === entry.playerName) &&
         //De player que trouxe ao menos 1 carry
@@ -283,14 +283,14 @@ export class AppService {
         (entry) => entry.characterName === character.characterName,
       );
 
-      entries[index].inUse = true;
+      entries[index].beingUsed = true;
     } else {
       character = entries.find(
         (entry) =>
           //Do tipo informado
           entry.characterLevel === type &&
           //Que não está sendo usado
-          !entry.inUse &&
+          !entry.beingUsed &&
           //De player não participante do grupo
           !playersInGroup.find((p) => p === entry.playerName),
       );
@@ -300,7 +300,7 @@ export class AppService {
           (entry) => entry.characterName === character.characterName,
         );
 
-        entries[index].inUse = true;
+        entries[index].beingUsed = true;
       }
     }
 
@@ -396,7 +396,7 @@ export class AppService {
       (char) =>
         char.playerName === playerName &&
         char.characterLevel === CharacterLevel.ALT &&
-        char.inUse,
+        char.beingUsed,
     ).length;
 
     return count;
