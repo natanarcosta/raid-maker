@@ -227,46 +227,11 @@ export class AppService {
     const bodyToImage = [];
 
     for (const group of raidGroups) {
-      const templateData = {
-        dps1: {
-          name: group.dps1?.characterName,
-          image: this.getClassImage(group.dps1?.characterClass),
-        },
-        dps2: {
-          name: group.dps2?.characterName,
-          image: this.getClassImage(group.dps2?.characterClass),
-        },
-        alt1: {
-          name: group.alt1?.characterName,
-          image: this.getClassImage(group.alt1?.characterClass),
-        },
-        alt2: {
-          name: group.alt2?.characterName,
-          image: this.getClassImage(group.alt2?.characterClass),
-        },
-        alt3: {
-          name: group.alt3?.characterName,
-          image: this.getClassImage(group.alt3?.characterClass),
-        },
-        alt4: {
-          name: group.alt4?.characterName,
-          image: this.getClassImage(group.alt4?.characterClass),
-        },
-        alt5: {
-          name: group.alt5?.characterName,
-          image: this.getClassImage(group.alt5?.characterClass),
-        },
-        alt6: {
-          name: group.alt6?.characterName,
-          image: this.getClassImage(group.alt6?.characterClass),
-        },
-      };
-
       const dataToImage = {};
 
       Object.entries(group).forEach((e) => {
         dataToImage[e[0]] = {
-          name: e[1]?.characterName || '-VAGA-',
+          name: e[1]?.playerName || '-VAGA-',
           class: e[1]?.characterClass || '',
         };
       });
