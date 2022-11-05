@@ -3,7 +3,22 @@ import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { GoogleSheetsService } from './google-sheets/google-sheets.service';
+import nodeHtmlToImage from 'node-html-to-image';
+import {
+  ArgosCardTemplate,
+  CreateImage,
+} from './shared/templates/argos_party_card.template';
 
+export interface TemplateData {
+  dps1: { name: string; class: string };
+  dps2: { name: string; class: string };
+  alt1: { name: string; class: string };
+  alt2: { name: string; class: string };
+  alt3: { name: string; class: string };
+  alt4: { name: string; class: string };
+  alt5: { name: string; class: string };
+  alt6: { name: string; class: string };
+}
 export interface CharacterEntry {
   timestamp: Date;
   playerName: string;
@@ -209,6 +224,21 @@ export class AppService {
       raidGroups.push(group);
     }
 
+    const bodyToImage = [];
+
+    for (const group of raidGroups) {
+      const dataToImage = {};
+
+      Object.entries(group).forEach((e) => {
+        dataToImage[e[0]] = {
+          name: e[1]?.playerName || '-VAGA-',
+          class: e[1]?.characterClass || '',
+        };
+      });
+
+      bodyToImage.push(dataToImage);
+    }
+
     const output = raidGroups.map((group) => {
       // return Object.values(group).map((value) => value?.playerName);
       return Object.values(group).map((value) => {
@@ -227,6 +257,7 @@ export class AppService {
       output,
       playersEntries,
       unused: characterEntries.filter((c) => !c.beingUsed),
+      bodyToImage,
     };
   }
 
@@ -235,6 +266,54 @@ export class AppService {
    */
   getCharactersFromType(entries: CharacterEntry[], type: string) {
     return entries.filter((entry) => entry.characterLevel === type);
+  }
+
+  async createImages(templateData: TemplateData[]) {
+    templateData.map(async (t) => {
+      const createImageRequest = {};
+
+      Object.entries(t).forEach((e) => {
+        createImageRequest[e[0]] = {
+          name: e[1]?.name,
+          image: this.getClassImage(e[1]?.class),
+        };
+      });
+      await nodeHtmlToImage({
+        output: `./image_${new Date().getTime().toString()}.png`,
+        html: new ArgosCardTemplate().getTemplate(
+          createImageRequest as CreateImage,
+        ),
+      });
+    });
+  }
+
+  getClassImage(className: string) {
+    if (className) {
+      className = className.toLowerCase();
+      const filePath = path.resolve('./src/assets/images/class-icons');
+      try {
+        const file = fs.readFileSync(filePath + '/' + className + '.png');
+
+        const base64 = Buffer.from(file).toString('base64');
+
+        return 'data:image/png;base64,' + base64;
+      } catch {
+        console.log('Aopa ', className);
+        const filePath = path.resolve('./src/assets/images/class-icons');
+        const file = fs.readFileSync(filePath + '/confused.png');
+
+        const base64 = Buffer.from(file).toString('base64');
+
+        return 'data:image/png;base64, ' + base64;
+      }
+    }
+
+    const filePath = path.resolve('./src/assets/images/class-icons');
+    const file = fs.readFileSync(filePath + '/' + 'confused' + '.png');
+
+    const base64 = Buffer.from(file).toString('base64');
+
+    return 'data:image/png;base64, ' + base64;
   }
 
   /**
